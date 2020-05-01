@@ -1,0 +1,49 @@
+sudo: required
+services:
+    - docker
+
+before_install:
+    - docker build -t javelincatcher/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+    #- docker run -e CI=true mikenol/docker-react npm run test -- --coverage
+    #- docker run -e CI=true javelincatcher/multi-docker npm run build
+    - docker run -e CI=true javelincatcher/react-test npm test
+
+language: generic
+
+after_success:
+    # Build all of our images
+    - docker build -t mikenol/multi-client ./client
+    - docker build -t mikenol/multi-nginx ./nginx
+    - docker build -t mikenol/multi-server ./server
+    - docker build -t mikenol/multi-worker ./worker
+
+    # Log in to the docker CLI using creds stored as vars in Travis CI 
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+
+    # Push images to docker hub
+    - docker push mikenol/multi-client
+    - docker push mikenol/multi-nginx
+    - docker push mikenol/multi-server
+    - docker push mikenol/multi-worker
+
+# AWS instances have been shut down so don't try to deploy
+#deploy:
+#    # Only use if you are getting a missing bucket_name error
+#    # edge: true
+#    provider: elasticbeanstalk
+#    region: "us-east-2"
+#    app: "multi-docker"
+#    env: "MultiDocker-env"
+#    # Get this from S3 service in AWS for your region
+#    bucket_name: "elasticbeanstalk-us-east-2-002528515977"
+#    # This is made up
+#    bucket_path: "docker-multi"
+#    on:
+#        branch: master
+#    access_key_id: "$AWS_ACCESS_KEY"
+#    # This does not work
+#    #secret_access_key:
+#    #    secure: "$AWS_SECRET_KEY"
+#    secret_access_key: "$AWS_SECRET_KEY"

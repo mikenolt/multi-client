@@ -1,0 +1,79 @@
+version: '3'
+
+services:
+    postgres:
+        image: 'postgres:latest'
+        environment:
+            - POSTGRES_PASSWORD=postgres_password
+
+    redis:
+        image: 'redis:latest'
+
+    nginx:
+        depends_on:
+            - api
+            - client
+        restart: always
+        build:
+            context: ./nginx
+            dockerfile: Dockerfile.dev
+        ports:
+            - '3050:80'
+
+    api:
+        depends_on:
+            - postgres
+        restart: on-failure
+        build:
+            context: ./server
+            dockerfile: Dockerfile.dev
+        volumes:
+            # Use the node_modules in the image
+            - "/app/node_modules"
+            # Use the local server directory mapped to the app folder in the image
+            #  This lets us see changes as we make them on the local machine
+            - ./server:/app
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - PGUSER=postgres
+            - PGHOST=postgres
+            - PGDATABASE=postgres
+            - PGPASSWORD=postgres_password
+            - PGPORT=5432
+
+    client:
+        #restart: always
+        # Must use quotes with no
+        #restart: 'no'
+        restart: on-failure
+        build:
+            context: ./client
+            dockerfile: Dockerfile.dev
+        volumes:
+            # Use the node_modules in the image
+            - "/app/node_modules"
+            # Use the local client directory mapped to the app folder in the image
+            #  This lets us see changes as we make them on the local machine
+            - ./client:/app
+        # This is required to address a bug in create react client
+        stdin_open: true
+
+    worker:
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+        #restart: always
+        # Must use quotes with no
+        #restart: 'no'
+        restart: on-failure
+        build:
+            context: ./worker
+            dockerfile: Dockerfile.dev
+        volumes:
+            # Use the node_modules in the image
+            - "/app/node_modules"
+            # Use the local worker directory mapped to the app folder in the image
+            #  This lets us see changes as we make them on the local machine
+            - ./worker:/app
+
