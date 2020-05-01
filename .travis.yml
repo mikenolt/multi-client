@@ -3,12 +3,13 @@ services:
     - docker
 
 before_install:
-    - docker build -t javelincatcher/react-test -f ./client/Dockerfile.dev ./client
+    - docker build -t mikenol/react-test -f ./client/Dockerfile.dev ./client
 
 script:
     #- docker run -e CI=true mikenol/docker-react npm run test -- --coverage
     #- docker run -e CI=true javelincatcher/multi-docker npm run build
-    - docker run -e CI=true javelincatcher/react-test npm test
+    # This is not the name of the repo or image, it is what we are testing
+    - docker run -e CI=true mikenol/react-test npm test
 
 language: generic
 
